@@ -28,25 +28,25 @@ class Mongo:
         return result
 
     def __del__(self):
-        self.db.close()
+        self.client.close()
         print("Disconnected")
 
     @staticmethod
-    def stdout_arrays(array:list, string:str):
+    def stdout_arrays(array: list, string: str):
         """ Output to arrays """
         print(string if string.endswith(":") else string + ":")
         for element in array:
             print('\t' + element)
         print()
 
-    def show_available_dbs(self, out:bool = False):
+    def show_available_dbs(self, out: bool = False):
         list_dbs = self.client.list_database_names()
 
         if out:
             self.stdout_arrays(list_dbs, f"Available clusters in this db")
         return list_dbs
 
-    def show_available_collections(self, out:bool = False):
+    def show_available_collections(self, out: bool = False):
         list_collections = self.db.list_collection_names()
 
         if out:
@@ -101,6 +101,35 @@ class Mongo:
         """ Read from DB """
         result = self.collection.find(params)
         return result
+
+    def user_validate(self, username: str, pw: str):
+        """ Used for check users """
+        if self.collection.find_one({'username.private': username.lower(), 'pw': pw}):
+            return True
+        return False
+
+    def user_reg(self):
+        print("Register new account...")
+
+        email = input("Email: ").lower()
+
+        if self.collection.find_one({'email': email}):
+            print("This email is already exist.")
+            return False
+
+        username = input("Username: ")
+
+        if self.collection.find_one({'username.private': username.lower()}):
+            print("This username is already exist.")
+            return False
+
+        pw = input("Password: ")
+        self.write({'email': email,
+                    'username': {'public': username, 'private': username.lower()},
+                    'pw': pw, 'collections': {}
+                    })
+
+        return True
 
 
 def choose_param():

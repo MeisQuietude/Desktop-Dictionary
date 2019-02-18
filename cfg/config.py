@@ -1,16 +1,16 @@
 
 def get_url():
-    url = ""  # Null for localhost
+    url = "mongodb+srv://admin:admin@dictionary-xtkrz.azure.mongodb.net/test?retryWrites=true"  # Null for localhost
     return url
 
 
 def get_cluster():
-    db = "dictionary"  # Null for 'testCollection'
+    db = "users"  # Null for 'testCollection'
     return db
 
 
 def get_collection():
-    collection = "eng-ru"  # Null for 'testDB'
+    collection = "data"  # Null for 'testDB'
     return collection
 
 
