@@ -84,6 +84,24 @@ class Mongo:
             print("~~       (It's not an error)       ~~")
         print("Collection set to: " + self.collection_name)
 
+    def write(self, *args):
+        """ Insert to DB """
+        invalid = filter(lambda x: type(x) is not dict, args)
+        args = filter(lambda x: type(x) is dict, args)
+        for arg in args:
+            self.collection.insert_one(arg)
+            print(f'Inserted: {arg}')
+
+        print('~~ DONE ~~')
+
+        for arg in invalid:
+            print(f'{type(arg)} ~~ INVALID DOCUMENT: {arg}')
+
+    def read(self, params):
+        """ Read from DB """
+        result = self.collection.find(params)
+        return result
+
 
 def choose_param():
     """ For switch-case construction """
@@ -117,6 +135,13 @@ def choose_param():
     elif arg.startswith('set '):
         arg = arg[4:]
         client.set_collection(arg)
+
+    elif arg.startswith('read'):
+        arg = {}
+        result = client.read(arg)
+
+        for doc in result.limit(20):
+            print(doc)
 
     else:
         print('Not available command')
