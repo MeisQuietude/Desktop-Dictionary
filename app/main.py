@@ -75,18 +75,18 @@ def rule_choice(rule):
 
 def import_dict():
     """ Импорт Словарь.txt """
-    with codecs.open('dictionary_en.json', 'r', encoding='utf-8') as f:
+    with codecs.open('../config/dictionary_en.json', 'r', encoding='utf-8') as f:
         EN = json.load(f)
-    with codecs.open('dictionary_ru.json', 'r', encoding='utf-8') as f:
+    with codecs.open('../config/dictionary_ru.json', 'r', encoding='utf-8') as f:
         RU = json.load(f)
     return EN, RU
 
 
 def export_dict(_en:dict,_ru:dict):
     """ Экспорт Словарь.txt """
-    with codecs.open('dictionary_en.json', 'w', encoding='utf-8') as f:
+    with codecs.open('../config/dictionary_en.json', 'w', encoding='utf-8') as f:
         json.dump(_en, f, ensure_ascii=False)
-    with codecs.open('dictionary_ru.json', 'w', encoding='utf-8') as f:
+    with codecs.open('../config/dictionary_ru.json', 'w', encoding='utf-8') as f:
         json.dump(_ru, f, ensure_ascii=False)
 
 
