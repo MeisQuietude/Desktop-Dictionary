@@ -4,12 +4,19 @@ import pymongo
 from pymongo import MongoClient
 
 from cfg import config
+from cfg.color import Color
+clr = Color()
+
+
+def stdout(*text, sep=' ', end=''):
+    if not debug: return
+    print(*text, sep, end)
 
 
 class Mongo:
     def __init__(self):
         self.url = config.get_url() or "mongodb://localhost:27017/"
-        print("Connect to " + self.url)
+        stdout("Connect to " + clr.yellow(self.url))
 
         self.cluster_name = config.get_cluster() or "testDB"
         self.collection_name = config.get_collection() or "testCollection"
@@ -18,10 +25,10 @@ class Mongo:
         self.db = self.client[self.cluster_name]
         self.collection = self.db[self.collection_name]
 
-        print("Set to default cluster and collection.")
-        print(self.cluster_name, self.collection_name, sep='  :  ')
+        stdout("Set to default cluster and collection.")
+        stdout(self.cluster_name, self.collection_name, sep='  :  ')
 
-        print("Connected\n")
+        stdout("Connected\n")
 
     def __repr__(self):
         result = f"url: {self.url},\ncollection: {self.collection_name}\n"
@@ -29,15 +36,15 @@ class Mongo:
 
     def __del__(self):
         self.client.close()
-        print("Disconnected")
+        stdout("Disconnected")
 
     @staticmethod
     def stdout_arrays(array: list, string: str):
         """ Output to arrays """
-        print(string if string.endswith(":") else string + ":")
+        stdout(string if string.endswith(":") else string + ":")
         for element in array:
-            print('\t' + element)
-        print()
+            stdout('\t' + element)
+        stdout()
 
     def show_available_dbs(self, out: bool = False):
         list_dbs = self.client.list_database_names()
@@ -61,6 +68,10 @@ class Mongo:
         """ Get current collection """
         return self.collection_name
 
+    def set_user(self, username):
+        self.set_cluster('user-collections')
+        self.set_collection(username)
+
     def set_cluster(self, new_cluster):
         """ Set another DB """
         self.db = self.client[new_cluster]
@@ -69,10 +80,10 @@ class Mongo:
         self.collection = None
 
         if new_cluster not in self.show_available_dbs():
-            print("~~ This cluster does not exist. ~~")
-            print("~~     (It's not an error)      ~~")
-        print("Cluster set to: " + self.cluster_name)
-        print("Please, choose collection.")
+            stdout("~~ This cluster does not exist. ~~")
+            stdout("~~     (It's not an error)      ~~")
+        stdout("Cluster set to: " + self.cluster_name)
+        stdout("Please, choose collection.")
 
     def set_collection(self, new_collection):
         """ Set another collection """
@@ -80,8 +91,8 @@ class Mongo:
         self.collection_name = new_collection
 
         if new_collection not in self.show_available_collections():
-            print("~~ This collection does not exist. ~~")
-            print("~~       (It's not an error)       ~~")
+            print(clr.yellow("~~            This collection does not exist.                  ~~"))
+            print("~~  (It's not an error, if you want to create new collection)  ~~")
         print("Collection set to: " + self.collection_name)
 
     def write(self, *args):
@@ -90,14 +101,14 @@ class Mongo:
         args = filter(lambda x: type(x) is dict, args)
         for arg in args:
             self.collection.insert_one(arg)
-            print(f'Inserted: {arg}')
+            stdout(f'Inserted: {arg}')
 
-        print('~~ DONE ~~')
+        stdout('~~ DONE ~~')
 
         for arg in invalid:
-            print(f'{type(arg)} ~~ INVALID DOCUMENT: {arg}')
+            stdout(f'{type(arg)} ~~ INVALID DOCUMENT: {arg}')
 
-    def read(self, params):
+    def read(self, params={}):
         """ Read from DB """
         result = self.collection.find(params)
         return result
@@ -109,18 +120,18 @@ class Mongo:
         return False
 
     def user_reg(self):
-        print("Register new account...")
+        stdout("Register new account...")
 
         email = input("Email: ").lower()
 
         if self.collection.find_one({'email': email}):
-            print("This email is already exist.")
+            stdout("This email is already exist.")
             return False
 
         username = input("Username: ")
 
         if self.collection.find_one({'username.private': username.lower()}):
-            print("This username is already exist.")
+            stdout("This username is already exist.")
             return False
 
         pw = input("Password: ")
@@ -143,8 +154,8 @@ def choose_param():
             'exit', 'show dbs', 'show collections', 'get db', 'get collection',
             'use *db*', 'set *collection*'
         )
-        print('Available commands:')
-        print(*cmds, sep='; ')
+        stdout('Available commands:')
+        stdout(*cmds, sep='; ')
 
     elif 'show dbs' == arg:
         client.show_available_dbs(out=True)
@@ -153,10 +164,10 @@ def choose_param():
 
     elif 'get db' == arg:
         db = client.get_cluster()
-        print(db)
+        stdout(db)
     elif 'get collection' == arg:
         collection = client.get_collection()
-        print(collection)
+        stdout(collection)
 
     elif arg.startswith('use '):
         arg = arg[4:]
@@ -170,14 +181,17 @@ def choose_param():
         result = client.read(arg)
 
         for doc in result.limit(20):
-            print(doc)
+            stdout(doc)
 
     else:
-        print('Not available command')
+        stdout('Not available command')
 
 
 if __name__ == '__main__':
+    debug = True
     client = Mongo()
 
     while True:
         choose_param()
+else:
+    debug = False
