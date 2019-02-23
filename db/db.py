@@ -4,7 +4,9 @@ import pymongo
 from pymongo import MongoClient
 
 from cfg import config
+from cfg.valid_data import valid_mail
 from cfg.color import Color
+
 clr = Color()
 
 
@@ -91,9 +93,9 @@ class Mongo:
         self.collection_name = new_collection
 
         if new_collection not in self.show_available_collections():
-            print(clr.yellow("~~            This collection does not exist.                  ~~"))
-            print("~~  (It's not an error, if you want to create new collection)  ~~")
-        print("Collection set to: " + self.collection_name)
+            stdout(clr.yellow("~~            This collection does not exist.                  ~~"))
+            stdout("~~  (It's not an error, if you want to create new collection)  ~~")
+        stdout("Collection set to: " + self.collection_name)
 
     def write(self, *args):
         """ Insert to DB """
@@ -103,10 +105,20 @@ class Mongo:
             self.collection.insert_one(arg)
             stdout(f'Inserted: {arg}')
 
-        stdout('~~ DONE ~~')
+        print(clr.green('~~ DONE ~~'))
 
         for arg in invalid:
             stdout(f'{type(arg)} ~~ INVALID DOCUMENT: {arg}')
+
+    def update_user(self, name : str, docs : dict):
+        """ Work with user's DATABASE """
+
+        for en, ru in docs.items():
+            new_value = {'$set' : {f'words.{en}' : ru}}
+            self.collection.update_one({'name': name}, new_value, upsert=True)
+            stdout(f'Updated: {en} : {ru}')
+
+        print(clr.green('~~ DONE ~~'))
 
     def read(self, params={}):
         """ Read from DB """
@@ -122,24 +134,42 @@ class Mongo:
     def user_reg(self):
         stdout("Register new account...")
 
-        email = input("Email: ").lower()
+        # EMAIL
+        email = None
+        while not email:
+            email = input("Email: ").lower()
+            if not valid_mail(email):
+                print("Your email " + clr.red("is not ") + "correct. Try again...")
+                email = None
 
         if self.collection.find_one({'email': email}):
             stdout("This email is already exist.")
             return False
 
-        username = input("Username: ")
+        # USERNAME
+        print('Username ' + clr.red("can't") + ' exist any specific symbols, '
+              + clr.red("can't") + "start's with digit.")
+        username = None
+        while not username:
+            username = input("Username: ")
 
         if self.collection.find_one({'username.private': username.lower()}):
             stdout("This username is already exist.")
             return False
 
-        pw = input("Password: ")
+        # PASSWORD
+        pw = 0
+        pw_conf = 1
+        while pw != pw_conf:
+            pw = input("Password: ")
+            pw_conf = input("Confirm password: ")
+
         self.write({'email': email,
                     'username': {'public': username, 'private': username.lower()},
                     'pw': pw, 'collections': {}
                     })
 
+        # DONE
         return True
 
 
