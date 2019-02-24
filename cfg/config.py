@@ -1,4 +1,7 @@
 
+__version__ = '0.7.0'
+
+
 def get_url():
     url = "mongodb+srv://admin:admin@dictionary-xtkrz.azure.mongodb.net/test?retryWrites=true"  # Null for localhost
     return url

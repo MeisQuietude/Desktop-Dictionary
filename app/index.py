@@ -1,4 +1,6 @@
+import app.play as test
 from db.db import Mongo
+
 from cfg.user import User
 from cfg.clear_console import cls
 from cfg.valid_data import valid_pair
@@ -12,11 +14,14 @@ class Local:
         self.user = User()
         self.client = Mongo()
 
-        self.client.set_user(self.user.username.lower())
-        self.collections = [doc['name'] for doc in self.client.read({})]
-        self.current = self.collections[0]
+        un = self.user.username.lower()
+        self.collections = self.client.read({'username.private': un})[0]['collections']
 
-        self.words = self.client.read({'name': self.collections[0]})[0]['words']
+        self.current = 'trial'
+
+        self.client.set_user_collections()
+
+        self.words = self.client.read({'name': f'{self.current}'})[0]['words']
 
         self.show_cols()
 
@@ -24,17 +29,31 @@ class Local:
             self.options()
 
     def show_cols(self):
+        self.client.set_user_data()
+        self.collections = self.client.read({'username.private': self.user.username.lower()})[0]['collections']
+        self.client.set_user_collections()
+
         print(clr.cyan('Available collections:'))
         for col in self.collections:
             print("\t" + col)
         print()
 
-    def set_col(self, col):
+    def set_col(self, col='trial'):
+        un = self.user.username.lower()
+
         if col not in self.collections:
             print('~~          This collection does not exist          ~~')
             print('~~ It is not an error if you want to create new one ~~')
-        self.current = col
-        self.words = self.client.read({'name': col})[0]['words']
+            self.current = f'{un}.{col}'
+            self.words = {}
+            print('~~          Enter at least one pair words           ~~')
+            f = self.start_write()
+            if f:
+                self.client.set_new_collection(un, col)
+            return
+
+        self.current = col if col == 'trial' else f'{un}.{col}'
+        self.words = self.client.read({'name': self.current})[0]['words']
 
     def get_words(self):
         return self.words
@@ -57,6 +76,10 @@ class Local:
                 print('Incorrect pair')
         self.client.update_user(self.current, words)
 
+        if not len(words):
+            return False
+        return True
+
     @staticmethod
     def pretty(words: dict):
         for k, v in words.items():
@@ -64,12 +87,12 @@ class Local:
 
     def options(self):
         """ USER OPTIONS """
-        res = input("").strip().lower()
+        res = input("> ").strip().lower()
         if not res: return
 
         if res == 'exit':
             exit()
-        elif res == 'clear':
+        elif res == 'clear' or res == 'cls':
             cls()
         elif res.startswith('set '):
             res = res[4:]
@@ -86,7 +109,14 @@ class Local:
             self.start_write()
         elif res == 'test':
             # create some tests for learn
-            pass
+            res = input("Wanna play MIX (default)? Or only rus/eng words?").strip().lower()
+            words = self.words
+            if res.startswith('r'):
+                test.play_ru(words)
+            elif res.startswith('e'):
+                test.play_en(words)
+            else:
+                test.play_mix(words)
 
 
 if __name__ == '__main__':

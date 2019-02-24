@@ -33,7 +33,7 @@ class Mongo:
         stdout("Connected\n")
 
     def __repr__(self):
-        result = f"url: {self.url},\ncollection: {self.collection_name}\n"
+        result = f"url: {self.url},\ncluster: {self.cluster_name}\ncollection: {self.collection_name}\n"
         return result
 
     def __del__(self):
@@ -70,9 +70,19 @@ class Mongo:
         """ Get current collection """
         return self.collection_name
 
-    def set_user(self, username):
+    def set_user_collections(self):
         self.set_cluster('user-collections')
-        self.set_collection(username)
+        self.set_collection('collections')
+
+    def set_user_data(self):
+        self.set_cluster(config.get_cluster())
+        self.set_collection(config.get_collection())
+
+    def set_new_collection(self, username, collection):
+        username = username.lower()
+        self.set_user_data()
+        self.collection.update_one({'username.private':username}, {'$push' : {'collections' : collection}})
+        self.set_user_collections()
 
     def set_cluster(self, new_cluster):
         """ Set another DB """
@@ -97,7 +107,7 @@ class Mongo:
             stdout("~~  (It's not an error, if you want to create new collection)  ~~")
         stdout("Collection set to: " + self.collection_name)
 
-    def write(self, *args):
+    def new_user(self, *args):
         """ Insert to DB """
         invalid = filter(lambda x: type(x) is not dict, args)
         args = filter(lambda x: type(x) is dict, args)
@@ -110,18 +120,20 @@ class Mongo:
         for arg in invalid:
             stdout(f'{type(arg)} ~~ INVALID DOCUMENT: {arg}')
 
-    def update_user(self, name : str, docs : dict):
+    def update_user(self, name: str, docs: dict):
         """ Work with user's DATABASE """
 
         for en, ru in docs.items():
-            new_value = {'$set' : {f'words.{en}' : ru}}
+            new_value = {'$set': {f'words.{en}': ru}}
             self.collection.update_one({'name': name}, new_value, upsert=True)
             stdout(f'Updated: {en} : {ru}')
 
         print(clr.green('~~ DONE ~~'))
 
-    def read(self, params={}):
+    def read(self, params=None):
         """ Read from DB """
+        if params is None:
+            params = {}
         result = self.collection.find(params)
         return result
 
@@ -164,10 +176,10 @@ class Mongo:
             pw = input("Password: ")
             pw_conf = input("Confirm password: ")
 
-        self.write({'email': email,
-                    'username': {'public': username, 'private': username.lower()},
-                    'pw': pw, 'collections': {}
-                    })
+        self.new_user({'email': email,
+                       'username': {'public': username, 'private': username.lower()},
+                       'pw': pw, 'collections': [], 'default': 'trial'
+                       })
 
         # DONE
         return True

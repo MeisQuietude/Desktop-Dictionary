@@ -2,7 +2,7 @@ import re
 
 
 def valid_mail(mail: str) -> bool:
-    expr = re.compile("^[A-Z0-9._%+-]+@[A-Z]{3,8}.+.[A-Z]{2,4}$", re.IGNORECASE)
+    expr = re.compile("^[A-Z0-9._%+-]+@[A-Z-]{3,15}.+.[A-Z]{2,4}$", re.IGNORECASE)
     result = expr.match(mail)
 
     if result is None: return False
